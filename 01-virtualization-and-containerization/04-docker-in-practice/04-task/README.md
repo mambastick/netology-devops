@@ -2,6 +2,7 @@
 
 ## Ссылка на форк:
 https://github.com/mambastick/shvirtd-example-python
+также форк вложен в этот репозиторий, как подмодуль для быстрого доступа.
 
 ## Скриншоты выполнения:
 ![img.png](img.png)
