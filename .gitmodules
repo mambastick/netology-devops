@@ -1,6 +1,8 @@
 [submodule "01-virtualization-and-containerization/04-docker-in-practice/shvirtd-example-python"]
 	path = 01-virtualization-and-containerization/04-docker-in-practice/shvirtd-example-python
 	url = https://github.com/mambastick/shvirtd-example-python.git
+	branch = main
 [submodule "02-cloud-infrastructure-terraform/ter-homeworks"]
 	path = 02-cloud-infrastructure-terraform/ter-homeworks
 	url = https://github.com/mambastick/ter-homeworks
+	branch = main
