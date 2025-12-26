@@ -2,9 +2,11 @@
 
 [Оригинальное задание тут](https://github.com/netology-code/mnt-homeworks/tree/MNT-video/08-ansible-04-role)
 
-[Основная часть (Playbook) (release 08.04)] (https://github.com/mambastick/netology-ansible/releases/tag/08.04)
-[Vector (Ansible Role) (release 1.0.0)] (https://github.com/mambastick/netology-vector-role)
-[Lighthouse (Ansible Role) (release 1.0.1)] (https://github.com/mambastick/netology-lighthouse-role/releases/tag/1.0.1)
+[Основная часть (Playbook) (release 08.04)](https://github.com/mambastick/netology-ansible/releases/tag/08.04)
+
+[Vector (Ansible Role) (release 1.0.0)](https://github.com/mambastick/netology-vector-role)
+
+[Lighthouse (Ansible Role) (release 1.0.1)](https://github.com/mambastick/netology-lighthouse-role/releases/tag/1.0.1)
 
 # Скриншоты выполнения
 ![Lighthouse demo](image.png)
