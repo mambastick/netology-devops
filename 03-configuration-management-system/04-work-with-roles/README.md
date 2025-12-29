@@ -9,9 +9,9 @@
 [Lighthouse (Ansible Role) (release 1.0.1)](https://github.com/mambastick/netology-lighthouse-role/releases/tag/1.0.1)
 
 # Скриншоты выполнения
-![Lighthouse demo](image.png)
-![Clickhouse demo](image-1.png)
-![Ansible playbook demo](image-2.png)
+![Lighthouse demo](images/image.png)
+![Clickhouse demo](images/image-1.png)
+![Ansible playbook demo](images/image-2.png)
 
 # Полный лог работы playbook
 ```ansible
