@@ -16,8 +16,8 @@ project {
 object ProjectVcs : GitVcsRoot({
     id("ProjectVcs")
     name = "Project repository"
-    url = "https://github.com/YOUR_GITHUB_LOGIN/YOUR_REPOSITORY.git"
-    branch = "refs/heads/master"
+    url = "https://github.com/mambastick/netology-devops.git"
+    branch = "refs/heads/main"
     branchSpec = "+:refs/heads/*"
 })
 
@@ -39,7 +39,7 @@ object Build : BuildType({
             localRepoScope = MavenBuildStep.RepositoryScope.AGENT
             userSettingsSelection = "settings.xml"
             conditions {
-                contains("teamcity.build.branch", "master")
+                contains("teamcity.build.branch", "main")
             }
         }
         maven {
@@ -48,7 +48,7 @@ object Build : BuildType({
             pomLocation = "pom.xml"
             localRepoScope = MavenBuildStep.RepositoryScope.AGENT
             conditions {
-                doesNotContain("teamcity.build.branch", "master")
+                doesNotContain("teamcity.build.branch", "main")
             }
         }
     }
