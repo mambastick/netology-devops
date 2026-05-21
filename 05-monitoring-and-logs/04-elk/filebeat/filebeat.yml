@@ -1,0 +1,26 @@
+filebeat.inputs:
+  - type: container
+    enabled: true
+    paths:
+      - /var/lib/docker/containers/*/*.log
+    processors:
+      - add_docker_metadata:
+          host: "unix:///var/run/docker.sock"
+      - drop_event:
+          when:
+            or:
+              - equals:
+                  container.name: "netology-filebeat"
+              - equals:
+                  container.name: "netology-logstash"
+
+processors:
+  - add_host_metadata: ~
+
+output.logstash:
+  hosts:
+    - "logstash:5044"
+
+logging.level: info
+setup.ilm.enabled: false
+setup.template.enabled: false
