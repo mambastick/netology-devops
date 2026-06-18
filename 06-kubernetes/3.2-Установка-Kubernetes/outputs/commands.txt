@@ -1,0 +1,67 @@
+
+### cluster nodes
+COMMAND: kubectl get nodes -o wide
+
+NAME        STATUS   ROLES           AGE   VERSION   INTERNAL-IP    EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION      CONTAINER-RUNTIME
+k8s-cp-01   Ready    control-plane   55d   v1.34.4   192.168.8.12   <none>        Ubuntu 24.04.4 LTS   6.8.0-110-generic   containerd://1.7.28
+k8s-wk-01   Ready    worker          53d   v1.34.4   192.168.8.21   <none>        Ubuntu 24.04.4 LTS   6.8.0-124-generic   containerd://2.2.1
+k8s-wk-02   Ready    worker          53d   v1.34.7   192.168.8.22   <none>        Ubuntu 24.04.4 LTS   6.8.0-110-generic   containerd://1.7.28
+k8s-wk-03   Ready    worker          53d   v1.34.7   192.168.8.23   <none>        Ubuntu 24.04.4 LTS   6.8.0-110-generic   containerd://2.2.1
+
+
+### container runtime on nodes
+COMMAND: kubectl get nodes -o custom-columns=NAME:.metadata.name,RUNTIME:.status.nodeInfo.containerRuntimeVersion,OS:.status.nodeInfo.osImage,KERNEL:.status.nodeInfo.kernelVersion
+
+NAME        RUNTIME               OS                   KERNEL
+k8s-cp-01   containerd://1.7.28   Ubuntu 24.04.4 LTS   6.8.0-110-generic
+k8s-wk-01   containerd://2.2.1    Ubuntu 24.04.4 LTS   6.8.0-124-generic
+k8s-wk-02   containerd://1.7.28   Ubuntu 24.04.4 LTS   6.8.0-110-generic
+k8s-wk-03   containerd://2.2.1    Ubuntu 24.04.4 LTS   6.8.0-110-generic
+
+
+### control plane components
+COMMAND: kubectl get pods -n kube-system -o wide | Select-String -Pattern 'etcd|kube-apiserver|kube-controller|kube-scheduler|coredns|cilium'
+
+
+cilium-5ql98                        1/1     Running   0              7d17h   192.168.8.22   k8s-wk-02   <none>         
+  <none>
+cilium-9nr6w                        1/1     Running   0              7d17h   192.168.8.21   k8s-wk-01   <none>         
+  <none>
+cilium-bmpgg                        1/1     Running   0              7d16h   192.168.8.12   k8s-cp-01   <none>         
+  <none>
+cilium-envoy-57kdr                  1/1     Running   0              7d16h   192.168.8.12   k8s-cp-01   <none>         
+  <none>
+cilium-envoy-8j6vf                  1/1     Running   0              7d17h   192.168.8.23   k8s-wk-03   <none>         
+  <none>
+cilium-envoy-w856p                  1/1     Running   0              7d17h   192.168.8.21   k8s-wk-01   <none>         
+  <none>
+cilium-envoy-wnp65                  1/1     Running   0              7d17h   192.168.8.22   k8s-wk-02   <none>         
+  <none>
+cilium-khz6h                        1/1     Running   0              7d17h   192.168.8.23   k8s-wk-03   <none>         
+  <none>
+cilium-operator-59bfd6955c-d42kr    1/1     Running   0              7d17h   192.168.8.22   k8s-wk-02   <none>         
+  <none>
+coredns-6f46d9bdff-j5s5w            1/1     Running   0              7d4h    10.0.0.135     k8s-cp-01   <none>         
+  <none>
+coredns-6f46d9bdff-szcl8            1/1     Running   0              7d4h    10.0.5.42      k8s-wk-03   <none>         
+  <none>
+etcd-k8s-cp-01                      1/1     Running   8 (11d ago)    55d     192.168.8.12   k8s-cp-01   <none>         
+  <none>
+kube-apiserver-k8s-cp-01            1/1     Running   10 (11d ago)   55d     192.168.8.12   k8s-cp-01   <none>         
+  <none>
+kube-controller-manager-k8s-cp-01   1/1     Running   13 (11d ago)   55d     192.168.8.12   k8s-cp-01   <none>         
+  <none>
+kube-scheduler-k8s-cp-01            1/1     Running   12 (11d ago)   55d     192.168.8.12   k8s-cp-01   <none>         
+  <none>
+
+
+
+
+### cluster info
+COMMAND: kubectl cluster-info
+
+Kubernetes control plane is running at https://192.168.8.10:6443
+CoreDNS is running at https://192.168.8.10:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+
