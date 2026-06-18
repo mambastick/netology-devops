@@ -1,0 +1,89 @@
+
+### create namespace
+COMMAND: kubectl create namespace kuber-1-5 --dry-run=client -o yaml | kubectl apply -f -
+
+namespace/kuber-1-5 created
+
+
+### apply frontend backend ingress
+COMMAND: kubectl apply -n kuber-1-5 -f 07-kubernetes/1.5/manifests/01-frontend.yaml -f 07-kubernetes/1.5/manifests/02-backend.yaml -f 07-kubernetes/1.5/manifests/03-ingress.yaml
+
+deployment.apps/frontend created
+service/frontend-svc created
+deployment.apps/backend created
+service/backend-svc created
+ingress.networking.k8s.io/frontend created
+ingress.networking.k8s.io/backend-api created
+
+
+### wait frontend
+COMMAND: kubectl rollout status -n kuber-1-5 deployment/frontend --timeout=240s
+
+Waiting for deployment "frontend" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "frontend" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "frontend" rollout to finish: 2 of 3 updated replicas are available...
+deployment "frontend" successfully rolled out
+
+
+### wait backend
+COMMAND: kubectl rollout status -n kuber-1-5 deployment/backend --timeout=240s
+
+deployment "backend" successfully rolled out
+
+
+### get pods svc ingress
+COMMAND: kubectl get pods,svc,ingress -n kuber-1-5 -o wide
+
+NAME                            READY   STATUS    RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+pod/backend-c5fb9594d-x5hcp     1/1     Running   0          2s    10.0.5.7     k8s-wk-03   <none>           <none>
+pod/frontend-66bc9644bd-8fqp5   1/1     Running   0          2s    10.0.5.245   k8s-wk-03   <none>           <none>
+pod/frontend-66bc9644bd-qrkwg   1/1     Running   0          2s    10.0.6.117   k8s-wk-02   <none>           <none>
+pod/frontend-66bc9644bd-qtcn7   1/1     Running   0          2s    10.0.4.21    k8s-wk-01   <none>           <none>
+
+NAME                   TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+service/backend-svc    ClusterIP   10.98.210.214   <none>        80/TCP    2s    app=backend
+service/frontend-svc   ClusterIP   10.107.106.54   <none>        80/TCP    2s    app=frontend
+
+NAME                                    CLASS   HOSTS             ADDRESS   PORTS   AGE
+ingress.networking.k8s.io/backend-api   nginx   kuber-1-5.local             80      2s
+ingress.networking.k8s.io/frontend      nginx   kuber-1-5.local             80      2s
+
+
+### frontend curls backend service
+COMMAND: kubectl exec -n kuber-1-5 frontend-66bc9644bd-8fqp5 -- curl -s http://backend-svc | Select-String -Pattern 'WBITT|Hostname'
+
+
+WBITT Network MultiTool (with NGINX) - backend-c5fb9594d-x5hcp - 10.0.5.7 . (Formerly praqma/network-multitool)
+
+
+
+
+### backend curls frontend service
+COMMAND: kubectl exec -n kuber-1-5 backend-c5fb9594d-x5hcp -- curl -s http://frontend-svc | Select-String -Pattern 'Welcome to nginx|title'
+
+
+<title>Welcome to nginx!</title>
+<h1>Welcome to nginx!</h1>
+
+
+
+
+
+### curl ingress frontend from local computer
+COMMAND: curl.exe -s -H "Host: kuber-1-5.local" http://192.168.8.240/ | Select-String -Pattern "Welcome to nginx|title"
+
+
+<title>Welcome to nginx!</title>
+<h1>Welcome to nginx!</h1>
+
+
+
+
+### curl ingress backend api from local computer
+COMMAND: curl.exe -s -H "Host: kuber-1-5.local" http://192.168.8.240/api | Select-String -Pattern "WBITT|Hostname|Request"
+
+
+WBITT Network MultiTool (with NGINX) - backend-c5fb9594d-x5hcp - 10.0.5.7 . (Formerly praqma/network-multitool)
+
+
+

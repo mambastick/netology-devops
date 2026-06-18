@@ -1,0 +1,175 @@
+
+### create namespace
+COMMAND: kubectl create namespace kuber-3-4 --dry-run=client -o yaml | kubectl apply -f -
+
+namespace/kuber-3-4 created
+
+
+### apply initial deployment nginx 1.19
+COMMAND: kubectl apply -n kuber-3-4 -f 07-kubernetes/3.4/manifests/01-deployment.yaml
+
+deployment.apps/update-app created
+service/update-app-svc created
+
+
+### wait initial rollout
+COMMAND: kubectl rollout status -n kuber-3-4 deployment/update-app --timeout=300s
+
+Waiting for deployment "update-app" rollout to finish: 0 of 5 updated replicas are available...
+Waiting for deployment "update-app" rollout to finish: 1 of 5 updated replicas are available...
+Waiting for deployment "update-app" rollout to finish: 2 of 5 updated replicas are available...
+Waiting for deployment "update-app" rollout to finish: 3 of 5 updated replicas are available...
+Waiting for deployment "update-app" rollout to finish: 4 of 5 updated replicas are available...
+deployment "update-app" successfully rolled out
+
+
+### initial pods
+COMMAND: kubectl get deploy,rs,pods -n kuber-3-4 -o wide
+
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS        IMAGES                                            SELECTOR
+deployment.apps/update-app   5/5     5            5           22s   nginx,multitool   nginx:1.19,wbitt/network-multitool:alpine-extra   app=update-app
+
+NAME                                   DESIRED   CURRENT   READY   AGE   CONTAINERS        IMAGES                                            SELECTOR
+replicaset.apps/update-app-cbbb89945   5         5         5       22s   nginx,multitool   nginx:1.19,wbitt/network-multitool:alpine-extra   app=update-app,pod-template-hash=cbbb89945
+
+NAME                             READY   STATUS    RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+pod/update-app-cbbb89945-dng4w   2/2     Running   0          22s   10.0.5.193   k8s-wk-03   <none>           <none>
+pod/update-app-cbbb89945-qd454   2/2     Running   0          22s   10.0.4.171   k8s-wk-01   <none>           <none>
+pod/update-app-cbbb89945-rv7xm   2/2     Running   0          22s   10.0.6.194   k8s-wk-02   <none>           <none>
+pod/update-app-cbbb89945-szbfg   2/2     Running   0          22s   10.0.4.174   k8s-wk-01   <none>           <none>
+pod/update-app-cbbb89945-vbhsx   2/2     Running   0          22s   10.0.5.164   k8s-wk-03   <none>           <none>
+
+
+### update nginx to 1.20
+COMMAND: kubectl set image -n kuber-3-4 deployment/update-app nginx=nginx:1.20
+
+deployment.apps/update-app image updated
+
+
+### wait nginx 1.20 rollout
+COMMAND: kubectl rollout status -n kuber-3-4 deployment/update-app --timeout=300s
+
+Waiting for deployment "update-app" rollout to finish: 1 out of 5 new replicas have been updated...
+Waiting for deployment "update-app" rollout to finish: 1 out of 5 new replicas have been updated...
+Waiting for deployment "update-app" rollout to finish: 1 out of 5 new replicas have been updated...
+Waiting for deployment "update-app" rollout to finish: 2 out of 5 new replicas have been updated...
+Waiting for deployment "update-app" rollout to finish: 2 out of 5 new replicas have been updated...
+Waiting for deployment "update-app" rollout to finish: 3 out of 5 new replicas have been updated...
+Waiting for deployment "update-app" rollout to finish: 3 out of 5 new replicas have been updated...
+Waiting for deployment "update-app" rollout to finish: 3 out of 5 new replicas have been updated...
+Waiting for deployment "update-app" rollout to finish: 3 out of 5 new replicas have been updated...
+Waiting for deployment "update-app" rollout to finish: 4 out of 5 new replicas have been updated...
+Waiting for deployment "update-app" rollout to finish: 4 out of 5 new replicas have been updated...
+Waiting for deployment "update-app" rollout to finish: 4 out of 5 new replicas have been updated...
+Waiting for deployment "update-app" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "update-app" rollout to finish: 1 old replicas are pending termination...
+deployment "update-app" successfully rolled out
+
+
+### pods after nginx 1.20 update
+COMMAND: kubectl get deploy,rs,pods -n kuber-3-4 -o wide
+
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS        IMAGES                                            SELECTOR
+deployment.apps/update-app   5/5     5            5           86s   nginx,multitool   nginx:1.20,wbitt/network-multitool:alpine-extra   app=update-app
+
+NAME                                    DESIRED   CURRENT   READY   AGE   CONTAINERS        IMAGES                                            SELECTOR
+replicaset.apps/update-app-69bb95c9f7   5         5         5       64s   nginx,multitool   nginx:1.20,wbitt/network-multitool:alpine-extra   app=update-app,pod-template-hash=69bb95c9f7
+replicaset.apps/update-app-cbbb89945    0         0         0       86s   nginx,multitool   nginx:1.19,wbitt/network-multitool:alpine-extra   app=update-app,pod-template-hash=cbbb89945
+
+NAME                              READY   STATUS      RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+pod/update-app-69bb95c9f7-42j4r   2/2     Running     0          11s   10.0.4.241   k8s-wk-01   <none>           <none>
+pod/update-app-69bb95c9f7-5xxng   2/2     Running     0          43s   10.0.6.93    k8s-wk-02   <none>           <none>
+pod/update-app-69bb95c9f7-s4znz   2/2     Running     0          26s   10.0.5.158   k8s-wk-03   <none>           <none>
+pod/update-app-69bb95c9f7-sgbqd   2/2     Running     0          6s    10.0.5.118   k8s-wk-03   <none>           <none>
+pod/update-app-69bb95c9f7-wml94   2/2     Running     0          64s   10.0.4.119   k8s-wk-01   <none>           <none>
+pod/update-app-cbbb89945-dng4w    0/2     Completed   0          86s   10.0.5.193   k8s-wk-03   <none>           <none>
+
+
+### service available after update
+COMMAND: curl.exe -s http://127.0.0.1:18085
+
+
+<title>Welcome to nginx!</title>
+<h1>Welcome to nginx!</h1>
+
+
+
+### try broken nginx 1.28 image
+COMMAND: kubectl set image -n kuber-3-4 deployment/update-app nginx=nginx:1.28-broken
+
+deployment.apps/update-app image updated
+
+
+### rollout status for broken update expected timeout
+COMMAND: kubectl rollout status -n kuber-3-4 deployment/update-app --timeout=60s
+
+Waiting for deployment "update-app" rollout to finish: 1 out of 5 new replicas have been updated...
+error: deployment "update-app" exceeded its progress deadline
+
+
+### pods after broken update still has available replicas
+COMMAND: kubectl get deploy,rs,pods -n kuber-3-4 -o wide
+
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE    CONTAINERS        IMAGES                                                   SELECTOR
+deployment.apps/update-app   5/5     1            5           2m1s   nginx,multitool   nginx:1.28-broken,wbitt/network-multitool:alpine-extra   app=update-app
+
+NAME                                    DESIRED   CURRENT   READY   AGE    CONTAINERS        IMAGES                                                   SELECTOR
+replicaset.apps/update-app-5f7d8dcdd7   1         1         0       31s    nginx,multitool   nginx:1.28-broken,wbitt/network-multitool:alpine-extra   app=update-app,pod-template-hash=5f7d8dcdd7
+replicaset.apps/update-app-69bb95c9f7   5         5         5       99s    nginx,multitool   nginx:1.20,wbitt/network-multitool:alpine-extra          app=update-app,pod-template-hash=69bb95c9f7
+replicaset.apps/update-app-cbbb89945    0         0         0       2m1s   nginx,multitool   nginx:1.19,wbitt/network-multitool:alpine-extra          app=update-app,pod-template-hash=cbbb89945
+
+NAME                              READY   STATUS         RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+pod/update-app-5f7d8dcdd7-wv7c8   1/2     ErrImagePull   0          31s   10.0.4.33    k8s-wk-01   <none>           <none>
+pod/update-app-69bb95c9f7-42j4r   2/2     Running        0          46s   10.0.4.241   k8s-wk-01   <none>           <none>
+pod/update-app-69bb95c9f7-5xxng   2/2     Running        0          78s   10.0.6.93    k8s-wk-02   <none>           <none>
+pod/update-app-69bb95c9f7-s4znz   2/2     Running        0          61s   10.0.5.158   k8s-wk-03   <none>           <none>
+pod/update-app-69bb95c9f7-sgbqd   2/2     Running        0          41s   10.0.5.118   k8s-wk-03   <none>           <none>
+pod/update-app-69bb95c9f7-wml94   2/2     Running        0          99s   10.0.4.119   k8s-wk-01   <none>           <none>
+
+
+### service available during broken rollout
+COMMAND: curl.exe -s http://127.0.0.1:18086
+
+
+<title>Welcome to nginx!</title>
+<h1>Welcome to nginx!</h1>
+
+
+
+### rollback after failed update
+COMMAND: kubectl rollout undo -n kuber-3-4 deployment/update-app
+
+deployment.apps/update-app rolled back
+
+
+### wait rollback
+COMMAND: kubectl rollout status -n kuber-3-4 deployment/update-app --timeout=300s
+
+deployment "update-app" successfully rolled out
+
+
+### rollout history and final pods
+COMMAND: kubectl rollout history -n kuber-3-4 deployment/update-app; kubectl get deploy,rs,pods -n kuber-3-4 -o wide
+
+deployment.apps/update-app 
+REVISION  CHANGE-CAUSE
+1         <none>
+3         <none>
+4         <none>
+
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE    CONTAINERS        IMAGES                                            SELECTOR
+deployment.apps/update-app   5/5     5            5           2m5s   nginx,multitool   nginx:1.20,wbitt/network-multitool:alpine-extra   app=update-app
+
+NAME                                    DESIRED   CURRENT   READY   AGE    CONTAINERS        IMAGES                                                   SELECTOR
+replicaset.apps/update-app-5f7d8dcdd7   0         0         0       35s    nginx,multitool   nginx:1.28-broken,wbitt/network-multitool:alpine-extra   app=update-app,pod-template-hash=5f7d8dcdd7
+replicaset.apps/update-app-69bb95c9f7   5         5         5       103s   nginx,multitool   nginx:1.20,wbitt/network-multitool:alpine-extra          app=update-app,pod-template-hash=69bb95c9f7
+replicaset.apps/update-app-cbbb89945    0         0         0       2m5s   nginx,multitool   nginx:1.19,wbitt/network-multitool:alpine-extra          app=update-app,pod-template-hash=cbbb89945
+
+NAME                              READY   STATUS        RESTARTS   AGE    IP           NODE        NOMINATED NODE   READINESS GATES
+pod/update-app-5f7d8dcdd7-wv7c8   0/2     Terminating   0          35s    10.0.4.33    k8s-wk-01   <none>           <none>
+pod/update-app-69bb95c9f7-42j4r   2/2     Running       0          50s    10.0.4.241   k8s-wk-01   <none>           <none>
+pod/update-app-69bb95c9f7-5xxng   2/2     Running       0          82s    10.0.6.93    k8s-wk-02   <none>           <none>
+pod/update-app-69bb95c9f7-s4znz   2/2     Running       0          65s    10.0.5.158   k8s-wk-03   <none>           <none>
+pod/update-app-69bb95c9f7-sgbqd   2/2     Running       0          45s    10.0.5.118   k8s-wk-03   <none>           <none>
+pod/update-app-69bb95c9f7-wml94   2/2     Running       0          103s   10.0.4.119   k8s-wk-01   <none>           <none>
+

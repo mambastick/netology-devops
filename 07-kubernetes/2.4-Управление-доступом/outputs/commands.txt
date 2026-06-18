@@ -1,0 +1,81 @@
+
+### cleanup previous csr
+COMMAND: kubectl delete csr netology-student --ignore-not-found
+
+
+
+### create namespace
+COMMAND: kubectl create namespace kuber-2-4 --dry-run=client -o yaml | kubectl apply -f -
+
+namespace/kuber-2-4 unchanged
+
+
+### apply role rolebinding pod
+COMMAND: kubectl apply -f 07-kubernetes/2.4/manifests/01-role.yaml -f 07-kubernetes/2.4/manifests/02-rolebinding.yaml -f 07-kubernetes/2.4/manifests/03-test-pod.yaml
+
+role.rbac.authorization.k8s.io/pod-log-reader unchanged
+rolebinding.rbac.authorization.k8s.io/netology-student-pod-log-reader unchanged
+pod/rbac-test-nginx unchanged
+
+
+### wait test pod
+COMMAND: kubectl wait -n kuber-2-4 --for=condition=Ready pod/rbac-test-nginx --timeout=240s
+
+pod/rbac-test-nginx condition met
+
+
+### apply certificate signing request
+COMMAND: kubectl apply -f 'C:\Users\neelo\AppData\Local\Temp\netology-kuber-2-4-rbac\student.csr.yaml'
+
+certificatesigningrequest.certificates.k8s.io/netology-student created
+
+
+### approve certificate signing request
+COMMAND: kubectl certificate approve netology-student
+
+certificatesigningrequest.certificates.k8s.io/netology-student approved
+
+
+### build temporary kubeconfig for student
+COMMAND: kubectl config view --raw --flatten > 'C:\Users\neelo\AppData\Local\Temp\netology-kuber-2-4-rbac\student-kubeconfig'; kubectl config set-credentials netology-student --client-certificate='C:\Users\neelo\AppData\Local\Temp\netology-kuber-2-4-rbac\student.crt' --client-key='C:\Users\neelo\AppData\Local\Temp\netology-kuber-2-4-rbac\student.key' --embed-certs=true --kubeconfig='C:\Users\neelo\AppData\Local\Temp\netology-kuber-2-4-rbac\student-kubeconfig'; kubectl config set-context netology-student --cluster=kubernetes --user=netology-student --namespace=kuber-2-4 --kubeconfig='C:\Users\neelo\AppData\Local\Temp\netology-kuber-2-4-rbac\student-kubeconfig'; kubectl config use-context netology-student --kubeconfig='C:\Users\neelo\AppData\Local\Temp\netology-kuber-2-4-rbac\student-kubeconfig'
+
+User "netology-student" set.
+Context "netology-student" created.
+Switched to context "netology-student".
+
+
+### student can get pods
+COMMAND: kubectl --kubeconfig='C:\Users\neelo\AppData\Local\Temp\netology-kuber-2-4-rbac\student-kubeconfig' get pods -o wide
+
+NAME              READY   STATUS    RESTARTS   AGE   IP          NODE        NOMINATED NODE   READINESS GATES
+rbac-test-nginx   1/1     Running   0          53s   10.0.5.77   k8s-wk-03   <none>           <none>
+
+
+### student can describe pod
+COMMAND: kubectl --kubeconfig='C:\Users\neelo\AppData\Local\Temp\netology-kuber-2-4-rbac\student-kubeconfig' describe pod rbac-test-nginx | Select-String -Pattern 'Name:|Namespace:|Status:|Containers:'
+
+
+Name:             rbac-test-nginx
+Namespace:        kuber-2-4
+Status:           Running
+Containers:
+    ConfigMapName:           kube-root-ca.crt
+
+
+
+
+### student can read pod logs
+COMMAND: kubectl --kubeconfig='C:\Users\neelo\AppData\Local\Temp\netology-kuber-2-4-rbac\student-kubeconfig' logs pod/rbac-test-nginx --tail=5
+
+2026/06/14 14:27:35 [notice] 1#1: start worker process 30
+2026/06/14 14:27:35 [notice] 1#1: start worker process 31
+2026/06/14 14:27:35 [notice] 1#1: start worker process 32
+127.0.0.1 - - [14/Jun/2026:14:27:41 +0000] "GET / HTTP/1.1" 200 615 "-" "curl/8.19.0" "-"
+127.0.0.1 - - [14/Jun/2026:14:28:27 +0000] "GET / HTTP/1.1" 200 615 "-" "curl/8.19.0" "-"
+
+
+### student cannot read secrets
+COMMAND: kubectl --kubeconfig='C:\Users\neelo\AppData\Local\Temp\netology-kuber-2-4-rbac\student-kubeconfig' get secrets
+
+Error from server (Forbidden): secrets is forbidden: User "netology-student" cannot list resource "secrets" in API group "" in the namespace "kuber-2-4"
+

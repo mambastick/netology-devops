@@ -1,0 +1,95 @@
+
+### create namespace
+COMMAND: kubectl create namespace kuber-2-3 --dry-run=client -o yaml | kubectl apply -f -
+
+namespace/kuber-2-3 created
+
+
+### apply configmap app
+COMMAND: kubectl apply -n kuber-2-3 -f 07-kubernetes/2.3/manifests/01-configmap.yaml -f 07-kubernetes/2.3/manifests/02-nginx-multitool.yaml
+
+configmap/app-config created
+deployment.apps/config-app created
+service/config-app-svc created
+
+
+### wait config app
+COMMAND: kubectl rollout status -n kuber-2-3 deployment/config-app --timeout=240s
+
+Waiting for deployment "config-app" rollout to finish: 0 of 1 updated replicas are available...
+deployment "config-app" successfully rolled out
+
+
+### get config app pods svc
+COMMAND: kubectl get pods,svc,configmap -n kuber-2-3 -o wide
+
+NAME                              READY   STATUS    RESTARTS   AGE   IP          NODE        NOMINATED NODE   READINESS GATES
+pod/config-app-5f64879c49-qbx56   2/2     Running   0          1s    10.0.5.43   k8s-wk-03   <none>           <none>
+
+NAME                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+service/config-app-svc   ClusterIP   10.100.38.183   <none>        80/TCP    1s    app=config-app
+
+NAME                         DATA   AGE
+configmap/app-config         3      1s
+configmap/kube-root-ca.crt   1      1s
+
+
+### curl config app through service port-forward
+COMMAND: curl.exe -s http://127.0.0.1:18082
+
+
+  <title>Netology Kubernetes</title>
+  <h1>Netology Kubernetes</h1>
+  <p>Страница отдается из ConfigMap.</p>
+
+
+
+### create tls secret
+COMMAND: kubectl create secret tls netology-tls -n kuber-2-3 --cert='C:\Users\neelo\AppData\Local\Temp\netology-kuber-2-3-tls\tls.crt' --key='C:\Users\neelo\AppData\Local\Temp\netology-kuber-2-3-tls\tls.key' --dry-run=client -o yaml | kubectl apply -f -
+
+secret/netology-tls created
+
+
+### apply https app ingress
+COMMAND: kubectl apply -n kuber-2-3 -f 07-kubernetes/2.3/manifests/03-https-configmap.yaml -f 07-kubernetes/2.3/manifests/04-https-app.yaml
+
+configmap/https-page created
+deployment.apps/https-app created
+service/https-app-svc created
+ingress.networking.k8s.io/https-app created
+
+
+### wait https app
+COMMAND: kubectl rollout status -n kuber-2-3 deployment/https-app --timeout=240s
+
+Waiting for deployment "https-app" rollout to finish: 0 of 1 updated replicas are available...
+deployment "https-app" successfully rolled out
+
+
+### get https resources
+COMMAND: kubectl get pods,svc,ingress,secret -n kuber-2-3 -o wide
+
+NAME                              READY   STATUS    RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+pod/config-app-5f64879c49-qbx56   2/2     Running   0          13s   10.0.5.43    k8s-wk-03   <none>           <none>
+pod/https-app-54d5fbb547-2ngsg    1/1     Running   0          7s    10.0.5.135   k8s-wk-03   <none>           <none>
+
+NAME                     TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+service/config-app-svc   ClusterIP   10.100.38.183   <none>        80/TCP    13s   app=config-app
+service/https-app-svc    ClusterIP   10.108.169.56   <none>        80/TCP    7s    app=https-app
+
+NAME                                  CLASS   HOSTS             ADDRESS   PORTS     AGE
+ingress.networking.k8s.io/https-app   nginx   kuber-2-3.local             80, 443   7s
+
+NAME                  TYPE                DATA   AGE
+secret/netology-tls   kubernetes.io/tls   2      8s
+
+
+### curl https ingress from local computer
+COMMAND: curl.exe --noproxy '*' -k --resolve kuber-2-3.local:443:192.168.8.240 https://kuber-2-3.local/ -s | Select-String -Pattern 'HTTPS работает|Secret|ConfigMap'
+
+
+  <h1>HTTPS работает</h1>
+  <p>Сертификат подключен через Secret, а страница лежит в ConfigMap.</p>
+
+
+

@@ -1,0 +1,124 @@
+
+### create namespace
+COMMAND: kubectl create namespace kuber-1-3 --dry-run=client -o yaml | kubectl apply -f -
+
+namespace/kuber-1-3 created
+
+
+### apply deployment with two containers
+COMMAND: kubectl apply -n kuber-1-3 -f 07-kubernetes/1.3/manifests/01-nginx-multitool-deployment.yaml
+
+deployment.apps/nginx-multitool created
+
+
+### wait first deployment
+COMMAND: kubectl rollout status -n kuber-1-3 deployment/nginx-multitool --timeout=240s
+
+Waiting for deployment "nginx-multitool" rollout to finish: 0 of 1 updated replicas are available...
+deployment "nginx-multitool" successfully rolled out
+
+
+### pods before scale
+COMMAND: kubectl get pods -n kuber-1-3 -o wide
+
+NAME                               READY   STATUS    RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+nginx-multitool-69f9b4c449-fg8n6   2/2     Running   0          2s    10.0.5.106   k8s-wk-03   <none>           <none>
+
+
+### scale deployment to 2 replicas
+COMMAND: kubectl scale -n kuber-1-3 deployment/nginx-multitool --replicas=2
+
+deployment.apps/nginx-multitool scaled
+
+
+### wait scaled deployment
+COMMAND: kubectl rollout status -n kuber-1-3 deployment/nginx-multitool --timeout=240s
+
+Waiting for deployment "nginx-multitool" rollout to finish: 1 of 2 updated replicas are available...
+deployment "nginx-multitool" successfully rolled out
+
+
+### pods after scale
+COMMAND: kubectl get pods -n kuber-1-3 -o wide
+
+NAME                               READY   STATUS    RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+nginx-multitool-69f9b4c449-fg8n6   2/2     Running   0          21s   10.0.5.106   k8s-wk-03   <none>           <none>
+nginx-multitool-69f9b4c449-z5ktg   2/2     Running   0          19s   10.0.4.179   k8s-wk-01   <none>           <none>
+
+
+### apply service and test pod
+COMMAND: kubectl apply -n kuber-1-3 -f 07-kubernetes/1.3/manifests/02-nginx-multitool-service.yaml -f 07-kubernetes/1.3/manifests/03-test-multitool-pod.yaml
+
+service/nginx-multitool-svc created
+pod/test-multitool created
+
+
+### wait test pod
+COMMAND: kubectl wait -n kuber-1-3 --for=condition=Ready pod/test-multitool --timeout=240s
+
+pod/test-multitool condition met
+
+
+### curl service from test pod
+COMMAND: kubectl exec -n kuber-1-3 test-multitool -- curl -s http://nginx-multitool-svc | Select-String -Pattern 'Welcome to nginx|Hostname'
+
+
+<title>Welcome to nginx!</title>
+<h1>Welcome to nginx!</h1>
+
+
+
+
+### apply init deployment without service
+COMMAND: kubectl apply -n kuber-1-3 -f 07-kubernetes/1.3/manifests/04-init-nginx-deployment.yaml
+
+deployment.apps/init-nginx created
+
+
+### wait init deployment before service expected timeout
+COMMAND: kubectl wait -n kuber-1-3 --for=condition=Available deployment/init-nginx --timeout=20s
+
+error: timed out waiting for the condition on deployments/init-nginx
+
+
+### pod state before service
+COMMAND: kubectl get pods -n kuber-1-3 -l app=init-nginx -o wide
+
+NAME                         READY   STATUS     RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+init-nginx-967c79c8f-nrsqw   0/1     Init:0/1   0          21s   10.0.5.140   k8s-wk-03   <none>           <none>
+
+
+### init container logs before service
+COMMAND: kubectl logs -n kuber-1-3 -l app=init-nginx -c wait-service --tail=10
+
+
+waiting for service
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+** server can't find init-nginx-svc.kuber-1-3.svc.cluster.local: NXDOMAIN
+
+** server can't find init-nginx-svc.kuber-1-3.svc.cluster.local: NXDOMAIN
+
+waiting for service
+
+
+### apply init service
+COMMAND: kubectl apply -n kuber-1-3 -f 07-kubernetes/1.3/manifests/05-init-nginx-service.yaml
+
+service/init-nginx-svc created
+
+
+### wait init deployment after service
+COMMAND: kubectl rollout status -n kuber-1-3 deployment/init-nginx --timeout=240s
+
+Waiting for deployment "init-nginx" rollout to finish: 0 of 1 updated replicas are available...
+deployment "init-nginx" successfully rolled out
+
+
+### pod state after service
+COMMAND: kubectl get pods -n kuber-1-3 -l app=init-nginx -o wide
+
+NAME                         READY   STATUS    RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+init-nginx-967c79c8f-nrsqw   1/1     Running   0          24s   10.0.5.140   k8s-wk-03   <none>           <none>
+

@@ -1,0 +1,84 @@
+
+### create namespace
+COMMAND: kubectl create namespace kuber-1-4 --dry-run=client -o yaml | kubectl apply -f -
+
+namespace/kuber-1-4 created
+
+
+### apply deployment service test pod
+COMMAND: kubectl apply -n kuber-1-4 -f 07-kubernetes/1.4/manifests/01-deployment.yaml -f 07-kubernetes/1.4/manifests/02-clusterip-service.yaml -f 07-kubernetes/1.4/manifests/03-test-multitool-pod.yaml
+
+deployment.apps/multiport-app created
+service/multiport-svc created
+pod/test-multitool created
+
+
+### wait deployment
+COMMAND: kubectl rollout status -n kuber-1-4 deployment/multiport-app --timeout=240s
+
+Waiting for deployment "multiport-app" rollout to finish: 0 of 3 updated replicas are available...
+Waiting for deployment "multiport-app" rollout to finish: 1 of 3 updated replicas are available...
+Waiting for deployment "multiport-app" rollout to finish: 2 of 3 updated replicas are available...
+deployment "multiport-app" successfully rolled out
+
+
+### wait test pod
+COMMAND: kubectl wait -n kuber-1-4 --for=condition=Ready pod/test-multitool --timeout=240s
+
+pod/test-multitool condition met
+
+
+### get pods and service
+COMMAND: kubectl get pods,svc -n kuber-1-4 -o wide
+
+NAME                                 READY   STATUS    RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+pod/multiport-app-685874d767-9dl68   2/2     Running   0          2s    10.0.5.10    k8s-wk-03   <none>           <none>
+pod/multiport-app-685874d767-9mk57   2/2     Running   0          2s    10.0.6.216   k8s-wk-02   <none>           <none>
+pod/multiport-app-685874d767-hzwlg   2/2     Running   0          2s    10.0.4.198   k8s-wk-01   <none>           <none>
+pod/test-multitool                   1/1     Running   0          2s    10.0.5.130   k8s-wk-03   <none>           <none>
+
+NAME                    TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)             AGE   SELECTOR
+service/multiport-svc   ClusterIP   10.100.122.50   <none>        9001/TCP,9002/TCP   2s    app=multiport-app
+
+
+### curl nginx port 9001 from pod
+COMMAND: kubectl exec -n kuber-1-4 test-multitool -- curl -s http://multiport-svc:9001 | Select-String -Pattern 'Welcome to nginx|title'
+
+
+<title>Welcome to nginx!</title>
+<h1>Welcome to nginx!</h1>
+
+
+
+
+### curl multitool port 9002 from pod
+COMMAND: kubectl exec -n kuber-1-4 test-multitool -- curl -s http://multiport-svc:9002 | Select-String -Pattern 'WBITT|Hostname|Remote Address|Server Name'
+
+
+WBITT Network MultiTool (with NGINX) - multiport-app-685874d767-9mk57 - 10.0.6.216 . (Formerly praqma/network-multitool
+)
+
+
+
+
+### apply nodeport service
+COMMAND: kubectl apply -n kuber-1-4 -f 07-kubernetes/1.4/manifests/04-nodeport-service.yaml
+
+service/multiport-nodeport created
+
+
+### get nodeport service
+COMMAND: kubectl get svc -n kuber-1-4 multiport-nodeport -o wide
+
+NAME                 TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)        AGE   SELECTOR
+multiport-nodeport   NodePort   10.96.107.10   <none>        80:30975/TCP   1s    app=multiport-app
+
+
+### curl nodeport from local computer
+COMMAND: curl.exe -s http://192.168.8.21:30975
+
+
+<title>Welcome to nginx!</title>
+<h1>Welcome to nginx!</h1>
+
+

@@ -1,0 +1,99 @@
+
+### create namespace
+COMMAND: kubectl create namespace kuber-2-1 --dry-run=client -o yaml | kubectl apply -f -
+
+namespace/kuber-2-1 created
+
+
+### apply emptyDir deployment
+COMMAND: kubectl apply -n kuber-2-1 -f 07-kubernetes/2.1/manifests/01-emptydir-deployment.yaml
+
+deployment.apps/shared-volume created
+
+
+### wait shared-volume deployment
+COMMAND: kubectl rollout status -n kuber-2-1 deployment/shared-volume --timeout=240s
+
+deployment "shared-volume" successfully rolled out
+
+
+### get shared-volume pod
+COMMAND: kubectl get pods -n kuber-2-1 -o wide
+
+NAME                             READY   STATUS    RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+shared-volume-79c5dc7cf9-sfvgj   2/2     Running   0          17s   10.0.5.246   k8s-wk-03   <none>           <none>
+
+
+### read shared file from reader container
+COMMAND: kubectl exec -n kuber-2-1 deployment/shared-volume -c reader -- tail -n 5 /shared/data.txt
+
+Sun Jun 14 14:24:07 UTC 2026
+Sun Jun 14 14:24:12 UTC 2026
+Sun Jun 14 14:24:17 UTC 2026
+Sun Jun 14 14:24:22 UTC 2026
+
+
+### apply daemonset
+COMMAND: kubectl apply -n kuber-2-1 -f 07-kubernetes/2.1/manifests/02-node-logs-daemonset.yaml
+
+daemonset.apps/node-logs created
+
+
+### wait daemonset
+COMMAND: kubectl rollout status -n kuber-2-1 daemonset/node-logs --timeout=240s
+
+Waiting for daemon set "node-logs" rollout to finish: 0 of 3 updated pods are available...
+Waiting for daemon set "node-logs" rollout to finish: 1 of 3 updated pods are available...
+Waiting for daemon set "node-logs" rollout to finish: 2 of 3 updated pods are available...
+daemon set "node-logs" successfully rolled out
+
+
+### get daemonset pods
+COMMAND: kubectl get pods -n kuber-2-1 -l app=node-logs -o wide
+
+NAME              READY   STATUS    RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+node-logs-9zvms   1/1     Running   0          2s    10.0.5.181   k8s-wk-03   <none>           <none>
+node-logs-f26s7   1/1     Running   0          2s    10.0.6.14    k8s-wk-02   <none>           <none>
+node-logs-pjc9x   1/1     Running   0          2s    10.0.4.80    k8s-wk-01   <none>           <none>
+
+
+### read node logs directory
+COMMAND: kubectl exec -n kuber-2-1 node-logs-9zvms -- sh -c 'ls -la /host/var/log | head -n 20'
+
+total 1592
+drwxr-xr-x   10 root     root          4096 Apr 21 17:18 .
+drwxr-xr-x    3 root     root          4096 Jun 14 14:24 ..
+lrwxrwxrwx    1 root     root            39 Aug  5  2025 README -> ../../usr/share/doc/systemd/README.logs
+-rw-r--r--    1 root     root         11457 Apr 21 17:18 alternatives.log
+-rw-r-----    1 root     adm              0 Feb 22 22:06 apport.log
+drwxr-xr-x    2 root     root          4096 Jun  5 14:29 apt
+-rw-r--r--    1 root     root         61229 Aug  5  2025 bootstrap.log
+-rw-rw----    1 root     43               0 Aug  5  2025 btmp
+-rw-r-----    1 root     adm         117761 Jun  5 18:54 cloud-init-output.log
+-rw-r-----    1 root     adm         804527 Jun  5 18:54 cloud-init.log
+drwxr-xr-x    2 root     root         20480 Jun 14 14:24 containers
+drwxr-xr-x    2 root     root          4096 Jul 25  2025 dist-upgrade
+-rw-r--r--    1 root     root        534084 Jun  5 14:29 dpkg.log
+-rw-r--r--    1 root     root             0 Aug  5  2025 faillog
+drwxrwx---    4 root     adm           4096 Feb 22 22:05 installer
+drwxr-sr-x    4 root     ping          4096 Apr 21 18:01 journal
+-rw-rw-r--    1 root     43          292292 Apr 21 17:18 lastlog
+drwxr-x---   49 root     root         12288 Jun 14 14:24 pods
+drwx------    2 root     root          4096 Aug  5  2025 private
+
+
+### read syslog or available log
+COMMAND: kubectl exec -n kuber-2-1 node-logs-9zvms -- sh -c 'if [ -f /host/var/log/syslog ]; then tail -n 10 /host/var/log/syslog; else echo /host/var/log/syslog not found; find /host/var/log -maxdepth 1 -type f | head -n 10; fi'
+
+/host/var/log/syslog not found
+/host/var/log/faillog
+/host/var/log/cloud-init-output.log
+/host/var/log/wtmp
+/host/var/log/dpkg.log
+/host/var/log/btmp
+/host/var/log/alternatives.log
+/host/var/log/lastlog
+/host/var/log/bootstrap.log
+/host/var/log/apport.log
+/host/var/log/cloud-init.log
+
