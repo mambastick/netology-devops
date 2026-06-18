@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: update-app
+  labels:
+    app: update-app
+spec:
+  replicas: 5
+  progressDeadlineSeconds: 30
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: update-app
+  template:
+    metadata:
+      labels:
+        app: update-app
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.19
+          ports:
+            - name: nginx
+              containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 3
+        - name: multitool
+          image: wbitt/network-multitool:alpine-extra
+          env:
+            - name: HTTP_PORT
+              value: "8080"
+            - name: HTTPS_PORT
+              value: "8443"
+          ports:
+            - name: multitool
+              containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: update-app-svc
+spec:
+  selector:
+    app: update-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
