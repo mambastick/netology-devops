@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: node-logs
+  labels:
+    app: node-logs
+spec:
+  selector:
+    matchLabels:
+      app: node-logs
+  template:
+    metadata:
+      labels:
+        app: node-logs
+    spec:
+      containers:
+        - name: multitool
+          image: wbitt/network-multitool:alpine-extra
+          env:
+            - name: HTTP_PORT
+              value: "8080"
+            - name: HTTPS_PORT
+              value: "8443"
+          volumeMounts:
+            - name: node-logs
+              mountPath: /host/var/log
+              readOnly: true
+      volumes:
+        - name: node-logs
+          hostPath:
+            path: /var/log
+            type: Directory
