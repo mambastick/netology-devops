@@ -1,0 +1,22 @@
+frontend:
+  replicaCount: 2
+  image:
+    repository: nginx
+    tag: "1.25.5"
+    pullPolicy: IfNotPresent
+  containerPort: 80
+  service:
+    port: 80
+
+backend:
+  replicaCount: 1
+  image:
+    repository: wbitt/network-multitool
+    tag: alpine-extra
+    pullPolicy: IfNotPresent
+  containerPort: 8080
+  env:
+    HTTP_PORT: "8080"
+    HTTPS_PORT: "8443"
+  service:
+    port: 80

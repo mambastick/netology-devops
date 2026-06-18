@@ -1,0 +1,132 @@
+
+### helm lint chart
+COMMAND: helm lint 06-kubernetes/2.5/chart
+
+==> Linting 06-kubernetes/2.5/chart
+[INFO] Chart.yaml: icon is recommended
+
+1 chart(s) linted, 0 chart(s) failed
+
+
+### helm template example
+COMMAND: helm template netology-app-v1 06-kubernetes/2.5/chart --set frontend.image.tag=1.25.5 | Select-String -Pattern 'kind: Deployment|name: netology-app-v1|image:'
+
+
+  name: netology-app-v1-netology-app-backend
+  name: netology-app-v1-netology-app-frontend
+kind: Deployment
+  name: netology-app-v1-netology-app-backend
+          image: "wbitt/network-multitool:alpine-extra"
+kind: Deployment
+  name: netology-app-v1-netology-app-frontend
+          image: "nginx:1.25.5"
+
+
+
+
+### install first version in app1
+COMMAND: helm upgrade --install netology-app-v1 06-kubernetes/2.5/chart -n app1 --create-namespace --wait --timeout 5m --set frontend.image.tag=1.25.5
+
+Release "netology-app-v1" does not exist. Installing it now.
+NAME: netology-app-v1
+LAST DEPLOYED: Sun Jun 14 17:28:51 2026
+NAMESPACE: app1
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+
+
+### install second version in app1
+COMMAND: helm upgrade --install netology-app-v2 06-kubernetes/2.5/chart -n app1 --create-namespace --wait --timeout 5m --set frontend.image.tag=1.25.4
+
+Release "netology-app-v2" does not exist. Installing it now.
+NAME: netology-app-v2
+LAST DEPLOYED: Sun Jun 14 17:28:53 2026
+NAMESPACE: app1
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+
+
+### install third version in app2
+COMMAND: helm upgrade --install netology-app-v1 06-kubernetes/2.5/chart -n app2 --create-namespace --wait --timeout 5m --set frontend.image.tag=1.25.3
+
+Release "netology-app-v1" does not exist. Installing it now.
+NAME: netology-app-v1
+LAST DEPLOYED: Sun Jun 14 17:29:03 2026
+NAMESPACE: app2
+STATUS: deployed
+REVISION: 1
+DESCRIPTION: Install complete
+TEST SUITE: None
+
+
+### helm list namespaces
+COMMAND: helm list -n app1; helm list -n app2
+
+NAME           	NAMESPACE	REVISION	UPDATED                              	STATUS  	CHART             	APP VERSION
+netology-app-v1	app1     	1       	2026-06-14 17:28:51.3491282 +0300 MSK	deployed	netology-app-0.1.0	1.0.0      
+netology-app-v2	app1     	1       	2026-06-14 17:28:53.5320472 +0300 MSK	deployed	netology-app-0.1.0	1.0.0      
+NAME           	NAMESPACE	REVISION	UPDATED                              	STATUS  	CHART             	APP VERSION
+netology-app-v1	app2     	1       	2026-06-14 17:29:03.8202516 +0300 MSK	deployed	netology-app-0.1.0	1.0.0      
+
+
+### get helm app resources app1
+COMMAND: kubectl get deploy,svc,pods -n app1 -o wide | Select-String -Pattern 'netology-app'
+
+
+deployment.apps/netology-app-v1-netology-app-backend    1/1     1            1           23s   backend      wbitt/netwo
+rk-multitool:alpine-extra   app.kubernetes.io/component=backend,app.kubernetes.io/instance=netology-app-v1
+deployment.apps/netology-app-v1-netology-app-frontend   2/2     2            2           23s   frontend     nginx:1.25.
+5                           app.kubernetes.io/component=frontend,app.kubernetes.io/instance=netology-app-v1
+deployment.apps/netology-app-v2-netology-app-backend    1/1     1            1           20s   backend      wbitt/netwo
+rk-multitool:alpine-extra   app.kubernetes.io/component=backend,app.kubernetes.io/instance=netology-app-v2
+deployment.apps/netology-app-v2-netology-app-frontend   2/2     2            2           20s   frontend     nginx:1.25.
+4                           app.kubernetes.io/component=frontend,app.kubernetes.io/instance=netology-app-v2
+service/netology-app-v1-netology-app-backend    ClusterIP   10.99.120.81     <none>        80/TCP    23s   app.kubernet
+es.io/component=backend,app.kubernetes.io/instance=netology-app-v1
+service/netology-app-v1-netology-app-frontend   ClusterIP   10.103.131.80    <none>        80/TCP    23s   app.kubernet
+es.io/component=frontend,app.kubernetes.io/instance=netology-app-v1
+service/netology-app-v2-netology-app-backend    ClusterIP   10.109.207.230   <none>        80/TCP    20s   app.kubernet
+es.io/component=backend,app.kubernetes.io/instance=netology-app-v2
+service/netology-app-v2-netology-app-frontend   ClusterIP   10.106.200.203   <none>        80/TCP    20s   app.kubernet
+es.io/component=frontend,app.kubernetes.io/instance=netology-app-v2
+pod/netology-app-v1-netology-app-backend-7cf794c485-mw5vx    1/1     Running   0          23s   10.0.6.218   k8s-wk-02 
+  <none>           <none>
+pod/netology-app-v1-netology-app-frontend-5f9646698d-7cxxw   1/1     Running   0          23s   10.0.4.14    k8s-wk-01 
+  <none>           <none>
+pod/netology-app-v1-netology-app-frontend-5f9646698d-qgnqj   1/1     Running   0          22s   10.0.5.163   k8s-wk-03 
+  <none>           <none>
+pod/netology-app-v2-netology-app-backend-6c89d78d6-2hn7p     1/1     Running   0          20s   10.0.4.63    k8s-wk-01 
+  <none>           <none>
+pod/netology-app-v2-netology-app-frontend-7dcd6d9df8-2pzd8   1/1     Running   0          20s   10.0.6.54    k8s-wk-02 
+  <none>           <none>
+pod/netology-app-v2-netology-app-frontend-7dcd6d9df8-l9jtj   1/1     Running   0          20s   10.0.4.81    k8s-wk-01 
+  <none>           <none>
+
+
+
+
+### get helm app resources app2
+COMMAND: kubectl get deploy,svc,pods -n app2 -o wide | Select-String -Pattern 'netology-app'
+
+
+deployment.apps/netology-app-v1-netology-app-backend    1/1     1            1           11s   backend      wbitt/netwo
+rk-multitool:alpine-extra   app.kubernetes.io/component=backend,app.kubernetes.io/instance=netology-app-v1
+deployment.apps/netology-app-v1-netology-app-frontend   2/2     2            2           11s   frontend     nginx:1.25.
+3                           app.kubernetes.io/component=frontend,app.kubernetes.io/instance=netology-app-v1
+service/netology-app-v1-netology-app-backend    ClusterIP   10.102.67.161   <none>        80/TCP    11s   app.kubernete
+s.io/component=backend,app.kubernetes.io/instance=netology-app-v1
+service/netology-app-v1-netology-app-frontend   ClusterIP   10.109.133.99   <none>        80/TCP    11s   app.kubernete
+s.io/component=frontend,app.kubernetes.io/instance=netology-app-v1
+pod/netology-app-v1-netology-app-backend-7cf794c485-8pppw   1/1     Running   0          11s   10.0.5.147   k8s-wk-03  
+ <none>           <none>
+pod/netology-app-v1-netology-app-frontend-899cbb9d6-l4wq7   1/1     Running   0          11s   10.0.5.26    k8s-wk-03  
+ <none>           <none>
+pod/netology-app-v1-netology-app-frontend-899cbb9d6-m7q54   1/1     Running   0          11s   10.0.6.10    k8s-wk-02  
+ <none>           <none>
+
+
+
