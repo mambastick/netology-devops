@@ -1,0 +1,177 @@
+
+### cleanup previous local pv if any
+COMMAND: kubectl delete pv kuber-2-2-local-pv --ignore-not-found
+
+
+
+### create namespace
+COMMAND: kubectl create namespace kuber-2-2 --dry-run=client -o yaml | kubectl apply -f -
+
+namespace/kuber-2-2 created
+
+
+### apply local pv and pvc
+COMMAND: kubectl apply -f 06-kubernetes/2.2/manifests/01-local-pv-pvc.yaml
+
+persistentvolume/kuber-2-2-local-pv created
+persistentvolumeclaim/local-pvc created
+
+
+### apply local storage deployment
+COMMAND: kubectl apply -f 06-kubernetes/2.2/manifests/02-local-deployment.yaml
+
+deployment.apps/local-storage-app created
+
+
+### wait local storage deployment
+COMMAND: kubectl rollout status -n kuber-2-2 deployment/local-storage-app --timeout=240s
+
+Waiting for deployment "local-storage-app" rollout to finish: 0 of 1 updated replicas are available...
+deployment "local-storage-app" successfully rolled out
+
+
+### get local pvc pv pod
+COMMAND: kubectl get pv kuber-2-2-local-pv; kubectl get pvc,pods -n kuber-2-2 -o wide
+
+NAME                 CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                 STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+kuber-2-2-local-pv   1Gi        RWO            Retain           Bound    kuber-2-2/local-pvc   manual         <unset>                          18s
+NAME                              STATUS   VOLUME               CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+persistentvolumeclaim/local-pvc   Bound    kuber-2-2-local-pv   1Gi        RWO            manual         <unset>                 19s   Filesystem
+
+NAME                                     READY   STATUS    RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+pod/local-storage-app-85bfdf4968-9z2kk   2/2     Running   0          18s   10.0.4.101   k8s-wk-01   <none>           <none>
+
+
+### read local file from multitool
+COMMAND: kubectl exec -n kuber-2-2 deployment/local-storage-app -c reader -- tail -n 5 /data/local.txt
+
+Sun Jun 14 14:25:01 UTC 2026
+Sun Jun 14 14:25:06 UTC 2026
+Sun Jun 14 14:25:11 UTC 2026
+
+
+### delete local deployment and pvc
+COMMAND: kubectl delete -n kuber-2-2 deployment/local-storage-app; kubectl delete -n kuber-2-2 pvc/local-pvc
+
+deployment.apps "local-storage-app" deleted from kuber-2-2 namespace
+persistentvolumeclaim "local-pvc" deleted from kuber-2-2 namespace
+
+
+### pv after deleting deployment and pvc
+COMMAND: kubectl get pv kuber-2-2-local-pv -o wide
+
+NAME                 CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS     CLAIM                 STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE   VOLUMEMODE
+kuber-2-2-local-pv   1Gi        RWO            Retain           Released   kuber-2-2/local-pvc   manual         <unset>                          56s   Filesystem
+
+
+### apply local inspector pod
+COMMAND: kubectl apply -f 06-kubernetes/2.2/manifests/03-local-inspector-pod.yaml
+
+pod/local-inspector created
+
+
+### wait local inspector
+COMMAND: kubectl wait -n kuber-2-2 --for=condition=Ready pod/local-inspector --timeout=120s
+
+pod/local-inspector condition met
+
+
+### read file from hostPath inspector before pv delete
+COMMAND: kubectl exec -n kuber-2-2 local-inspector -- tail -n 5 /data/local.txt
+
+Sun Jun 14 14:25:26 UTC 2026
+Sun Jun 14 14:25:31 UTC 2026
+Sun Jun 14 14:25:36 UTC 2026
+Sun Jun 14 14:25:41 UTC 2026
+Sun Jun 14 14:25:46 UTC 2026
+
+
+### delete local pv object
+COMMAND: kubectl delete pv kuber-2-2-local-pv
+
+persistentvolume "kuber-2-2-local-pv" deleted
+
+
+### pv after delete
+COMMAND: kubectl get pv kuber-2-2-local-pv
+
+Error from server (NotFound): persistentvolumes "kuber-2-2-local-pv" not found
+
+
+### read file from hostPath inspector after pv delete
+COMMAND: kubectl exec -n kuber-2-2 local-inspector -- tail -n 5 /data/local.txt
+
+Sun Jun 14 14:25:26 UTC 2026
+Sun Jun 14 14:25:31 UTC 2026
+Sun Jun 14 14:25:36 UTC 2026
+Sun Jun 14 14:25:41 UTC 2026
+Sun Jun 14 14:25:46 UTC 2026
+
+
+### show storage classes
+COMMAND: kubectl get storageclass nfs-safe
+
+NAME       PROVISIONER                                        RECLAIMPOLICY   VOLUMEBINDINGMODE   ALLOWVOLUMEEXPANSION   AGE
+nfs-safe   k8s-sigs.io/nfs-safe-subdir-external-provisioner   Retain          Immediate           true                   106d
+
+
+### apply nfs pvc and deployment
+COMMAND: kubectl apply -f 06-kubernetes/2.2/manifests/04-nfs-pvc.yaml -f 06-kubernetes/2.2/manifests/05-nfs-deployment.yaml
+
+persistentvolumeclaim/nfs-pvc created
+deployment.apps/nfs-storage-app created
+
+
+### wait nfs deployment
+COMMAND: kubectl rollout status -n kuber-2-2 deployment/nfs-storage-app --timeout=240s
+
+Waiting for deployment "nfs-storage-app" rollout to finish: 0 of 1 updated replicas are available...
+deployment "nfs-storage-app" successfully rolled out
+
+
+### get nfs pvc pv pod
+COMMAND: kubectl get pvc -n kuber-2-2 nfs-pvc; kubectl get pv | Select-String -Pattern 'kuber-2-2/nfs-pvc|nfs-safe'; kubectl get pods -n kuber-2-2 -o wide
+
+NAME      STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+nfs-pvc   Bound    pvc-38da3eea-8be2-40a6-975b-57a3d640f9dd   1Gi        RWX            nfs-safe       <unset>                 1s
+
+pvc-2bf94cc3-a669-40b0-8f86-09a1015fe0bf   100Gi      RWX            Retain           Released   nextcloud/nextcloud-ne
+xtcloud-data                                                                                          nfs-safe         
+ <unset>                          52d
+pvc-38da3eea-8be2-40a6-975b-57a3d640f9dd   1Gi        RWX            Retain           Bound      kuber-2-2/nfs-pvc     
+                                                                                                      nfs-safe         
+ <unset>                          1s
+pvc-44a1a942-e8cd-43e5-a541-6062fb2bef2e   100Gi      RWX            Retain           Released   vscode/vscode-workspac
+e                                                                                                     nfs-safe         
+ <unset>                          65d
+pvc-52e6e7b4-81ee-4a98-844a-dc01bf4ca0c5   5Gi        RWX            Retain           Released   media/jellyfin-config-
+rwx                                                                                                   nfs-safe         
+ <unset>                          106d
+pvc-9ff7bd60-3894-4d28-a5e7-696899325bc6   100Gi      RWX            Retain           Bound      nextcloud/nextcloud-ne
+xtcloud-data                                                                                          nfs-safe         
+ <unset>                          52d
+pvc-ac1e12ad-ef5b-4ec9-9748-e84c943e6d5b   200Gi      RWX            Retain           Bound      immich/immich-library-
+safe                                                                                                  nfs-safe         
+ <unset>                          94d
+pvc-eb4dcb51-b6d4-43cb-aabe-99b142886583   100Gi      RWX            Retain           Bound      paperless/paperless-do
+cuments                                                                                               nfs-safe         
+ <unset>                          50d
+pvc-eddbf7a7-ead8-4798-8972-7d0b392d2ab7   100Gi      RWX            Retain           Released   nextcloud/nextcloud-ne
+xtcloud-data                                                                                          nfs-safe         
+ <unset>                          52d
+NAME                               READY   STATUS    RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+local-inspector                    1/1     Running   0          5s    10.0.4.65    k8s-wk-01   <none>           <none>
+nfs-storage-app-7b6f9d9455-cfdbv   1/1     Running   0          1s    10.0.5.143   k8s-wk-03   <none>           <none>
+
+
+
+
+### write and read file on nfs pvc
+COMMAND: kubectl exec -n kuber-2-2 deployment/nfs-storage-app -- sh -c 'echo nfs-ok > /data/check.txt && cat /data/check.txt && ls -la /data | head'
+
+nfs-ok
+total 12
+drwxrwxrwx    2 root     root          4096 Jun 14 14:25 .
+drwxr-xr-x    1 root     root          4096 Jun 14 14:25 ..
+-rw-r--r--    1 root     root             7 Jun 14 14:25 check.txt
+

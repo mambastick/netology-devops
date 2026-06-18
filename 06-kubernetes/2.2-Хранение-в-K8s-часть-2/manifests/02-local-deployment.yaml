@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: local-storage-app
+  namespace: kuber-2-2
+  labels:
+    app: local-storage-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: local-storage-app
+  template:
+    metadata:
+      labels:
+        app: local-storage-app
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: k8s-wk-01
+      containers:
+        - name: writer
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - while true; do date >> /data/local.txt; sleep 5; done
+          volumeMounts:
+            - name: local-data
+              mountPath: /data
+        - name: reader
+          image: wbitt/network-multitool:alpine-extra
+          env:
+            - name: HTTP_PORT
+              value: "8080"
+            - name: HTTPS_PORT
+              value: "8443"
+          volumeMounts:
+            - name: local-data
+              mountPath: /data
+      volumes:
+        - name: local-data
+          persistentVolumeClaim:
+            claimName: local-pvc
