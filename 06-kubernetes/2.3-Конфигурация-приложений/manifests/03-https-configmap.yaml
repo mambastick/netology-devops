@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: https-page
+data:
+  index.html: |
+    <!doctype html>
+    <html lang="ru">
+    <head>
+      <meta charset="utf-8">
+      <title>HTTPS page</title>
+    </head>
+    <body>
+      <h1>HTTPS работает</h1>
+      <p>Сертификат подключен через Secret, а страница лежит в ConfigMap.</p>
+    </body>
+    </html>
