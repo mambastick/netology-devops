@@ -1,0 +1,80 @@
+
+### apply apps
+COMMAND: kubectl apply -f 06-kubernetes/3.3/manifests/01-apps.yaml
+
+namespace/app created
+deployment.apps/frontend created
+deployment.apps/backend created
+deployment.apps/cache created
+service/frontend created
+service/backend created
+service/cache created
+
+
+### wait frontend backend cache
+COMMAND: kubectl rollout status -n app deployment/frontend --timeout=240s; kubectl rollout status -n app deployment/backend --timeout=240s; kubectl rollout status -n app deployment/cache --timeout=240s
+
+Waiting for deployment "frontend" rollout to finish: 0 of 1 updated replicas are available...
+deployment "frontend" successfully rolled out
+deployment "backend" successfully rolled out
+deployment "cache" successfully rolled out
+
+
+### get pods services before policies
+COMMAND: kubectl get pods,svc -n app -o wide
+
+NAME                            READY   STATUS    RESTARTS   AGE   IP           NODE        NOMINATED NODE   READINESS GATES
+pod/backend-c5fb9594d-wvr29     1/1     Running   0          2s    10.0.6.148   k8s-wk-02   <none>           <none>
+pod/cache-564f4b947d-hvq84      1/1     Running   0          2s    10.0.4.126   k8s-wk-01   <none>           <none>
+pod/frontend-74f6b7fb84-j8rgf   1/1     Running   0          2s    10.0.5.239   k8s-wk-03   <none>           <none>
+
+NAME               TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+service/backend    ClusterIP   10.98.151.252   <none>        80/TCP    2s    app=backend
+service/cache      ClusterIP   10.108.164.0    <none>        80/TCP    2s    app=cache
+service/frontend   ClusterIP   10.98.58.175    <none>        80/TCP    2s    app=frontend
+
+
+### apply network policies
+COMMAND: kubectl apply -f 06-kubernetes/3.3/manifests/02-network-policies.yaml
+
+networkpolicy.networking.k8s.io/default-deny-ingress created
+networkpolicy.networking.k8s.io/allow-frontend-to-backend created
+networkpolicy.networking.k8s.io/allow-backend-to-cache created
+
+
+### get network policies
+COMMAND: kubectl get networkpolicy -n app -o wide
+
+NAME                        POD-SELECTOR   AGE
+allow-backend-to-cache      app=cache      8s
+allow-frontend-to-backend   app=backend    8s
+default-deny-ingress        <none>         8s
+
+
+### allowed frontend to backend
+COMMAND: kubectl exec -n app frontend-74f6b7fb84-j8rgf -- curl -s -m 5 http://backend
+
+WBITT Network MultiTool (with NGINX) - backend-c5fb9594d-wvr29 - 10.0.6.148 . (Formerly praqma/network-multitool)
+exit-code=0
+
+
+### allowed backend to cache
+COMMAND: kubectl exec -n app backend-c5fb9594d-wvr29 -- curl -s -m 5 http://cache
+
+WBITT Network MultiTool (with NGINX) - cache-564f4b947d-hvq84 - 10.0.4.126 . (Formerly praqma/network-multitool)
+exit-code=0
+
+
+### blocked frontend to cache
+COMMAND: kubectl exec -n app frontend-74f6b7fb84-j8rgf -- curl -s -m 5 http://cache
+
+command terminated with exit code 28
+exit-code=28
+
+
+### blocked cache to backend
+COMMAND: kubectl exec -n app cache-564f4b947d-hvq84 -- curl -s -m 5 http://backend
+
+command terminated with exit code 28
+exit-code=28
+
