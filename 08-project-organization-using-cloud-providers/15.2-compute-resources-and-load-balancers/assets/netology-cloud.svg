@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#151d3b"/>
+      <stop offset="1" stop-color="#126e82"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" rx="36" fill="url(#background)"/>
+  <circle cx="950" cy="130" r="150" fill="#35c2bd" opacity=".18"/>
+  <circle cx="220" cy="520" r="210" fill="#7c3aed" opacity=".17"/>
+  <path d="M445 385h330c72 0 120-43 120-103 0-57-43-99-100-103-19-81-87-134-173-134-102 0-181 75-190 172-68 6-117 52-117 112 0 32 13 56 37 56h93z" fill="#f8fafc"/>
+  <text x="600" y="480" text-anchor="middle" fill="#f8fafc" font-family="Arial, sans-serif" font-size="54" font-weight="700">Netology Cloud</text>
+  <text x="600" y="535" text-anchor="middle" fill="#bae6fd" font-family="Arial, sans-serif" font-size="26">Object Storage · Instance Group · Load Balancer</text>
+</svg>

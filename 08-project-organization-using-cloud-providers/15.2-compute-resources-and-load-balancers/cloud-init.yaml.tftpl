@@ -1,0 +1,19 @@
+#cloud-config
+write_files:
+  - path: /var/www/html/index.html
+    permissions: "0644"
+    content: |
+      <!doctype html>
+      <html lang="en">
+      <head><meta charset="utf-8"><title>Netology Cloud</title></head>
+      <body style="margin:0;background:#0f172a;color:#f8fafc;font-family:Arial,sans-serif;text-align:center">
+        <main style="max-width:900px;margin:70px auto;padding:30px">
+          <h1>Netology LAMP instance</h1>
+          <p>Served by <strong>__HOSTNAME__</strong></p>
+          <img src="${image_url}" alt="Netology Cloud" style="width:100%;border-radius:20px">
+        </main>
+      </body>
+      </html>
+runcmd:
+  - [bash, -lc, 'sed -i "s/__HOSTNAME__/$(hostname)/g" /var/www/html/index.html']
+  - [bash, -lc, 'systemctl enable --now apache2 || systemctl enable --now httpd']
